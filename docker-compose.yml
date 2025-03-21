@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  my-mango:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: ahmaddatabase
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+
+  my-mysql-db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 246810$
+      MYSQL_DATABASE: ahmaddatabase
+    volumes:
+      - mysql-db:/var/lib/mysql
+
+  my-analytics:
+    build: ./Analytics
+    depends_on:
+      - my-mysql-db
+      - my-mango
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://my-mysql-db/ahmaddatabase
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 246810$
+      SPRING_DATA_MONGODB_URI: mongodb://my-mango:27017/ahmaddatabase
+
+  data-entry:
+    build: ./Data-Entry
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://my-mysql-db/ahmaddatabase
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 246810$
+    depends_on:
+      - my-mysql-db
+      - my-authentication
+
+  my-show-data:
+    build: ./ShowData
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://my-mango:27017/ahmaddatabase
+    depends_on:
+      - my-mango
+      - my-authentication
+
+  my-authentication:
+    build: ./Authentication
+
+volumes:
+  mysql-db:
+  mongo-data:
+  mongo-config:
